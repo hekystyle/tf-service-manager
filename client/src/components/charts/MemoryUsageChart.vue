@@ -6,7 +6,7 @@
       <div class="q-pt-sm">Total usage: {{ totalUsage }}MB</div>
     </q-card-section>
     <q-separator />
-    <q-card-section>
+    <q-card-section style="overflow: auto;">
       <v-chart class="chart" :option="option" />
     </q-card-section>
   </q-card>
