@@ -624,11 +624,18 @@ export class CommandService {
           this.eventsGateway.sendLogsToClient(line, service);
         });
       });
-      process.on('exit', () => {
+      process.on('exit', (code) => {
         callback();
         this.logCommandFinished(command, service);
         this.servicesService.setServiceProcess(service, null);
         this.servicesService.removeRunningTask(service, taskName);
+        if (code !== 0 && code !== null) {
+          this.servicesService.addFailedTask(service, taskName);
+          // Clear the singular runningTask so the per-row spinner stops
+          // (waiters like waitOnService may otherwise keep polling forever
+          // and never reach their .then() that normally clears it).
+          this.servicesService.setServiceRunningTask(service, '');
+        }
         this.eventsGateway.sendStatusUpdateToClient();
         resolve(resultData);
       });

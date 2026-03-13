@@ -38,6 +38,7 @@ export interface BaseService {
   runningScript: string;
   runningTask: string;
   runningTasks: string[];
+  failedTasks: Set<string>;
   port: number;
   defaultGitBranch?: string;
   currentGitBranch?: string;
@@ -148,6 +149,7 @@ export class ServicesService {
         ensureTaskHasRequiredFields(task);
       }
       baseService.runningTasks = [];
+      baseService.failedTasks = new Set();
 
       // Autodetect package manager (this.servicesDirectory must be set before this line)
       baseService.packageManager = detectPackageManager(
@@ -219,6 +221,7 @@ export class ServicesService {
         runningScript: service.runningScript,
         runningTask: service.runningTask,
         runningTasks: service.runningTasks,
+        failedTasks: Array.from(service.failedTasks),
         currentGitBranch: service.currentGitBranch,
         currentGitBranchHasChanges: service.currentGitBranchHasChanges,
         currentGitBranchAhead: service.currentGitBranchAhead,
@@ -292,7 +295,13 @@ export class ServicesService {
 
   addRunningTask(service: string, task: string) {
     const serviceItem = this.services.find((s) => s.name === service);
+    serviceItem.failedTasks.delete(task);
     serviceItem.runningTasks.push(task);
+  }
+
+  addFailedTask(service: string, task: string) {
+    const serviceItem = this.services.find((s) => s.name === service);
+    serviceItem.failedTasks.add(task);
   }
 
   removeRunningTask(service: string, task: string) {

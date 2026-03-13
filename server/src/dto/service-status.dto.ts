@@ -6,6 +6,7 @@ export class ServiceStatusDto {
   cloned: boolean;
   runningScript: string;
   runningTasks: string[];
+  failedTasks: string[];
   currentGitBranch: string;
   currentGitBranchHasChanges: boolean;
   currentGitBranchAhead: number;
