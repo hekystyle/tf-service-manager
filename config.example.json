@@ -10,6 +10,7 @@
       "appUrlSuffix": "api-docs",
       "color": "teal-9",
       "packageManager": "npm",
+      "isServer": true,
       "genericTasks": [
         "COPY_ENV"
       ],

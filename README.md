@@ -132,6 +132,7 @@ Services consist of the following configuration options
 - `defaultGitBranch` - branch to checkout with GIT_CHECKOUT command when no branch is provided via an attribute
 - `subservices` - list of subservices in a monorepo (optional)
 - `path` - relative path to the subservice within the monorepo root (required for subservices)
+- `isServer` - marks the service as a NestJS server; enables `START_SERVICE_WATCH` and `START_SERVICE_DEBUG` tasks and switches `START_SERVICE` to run `npx nest start` directly (instead of `npm run ${npmRunLifecycle}`) (optional, default `false`)
 
 ## Services statuses
 - `STOPPED` - service is stopped and not running
@@ -153,7 +154,9 @@ Tasks consist of the following configuration options
 - `GIT_CLONE` - clones repo to `services_directory` directory
 - `REMOVE_SERVERI` - deletes service from filesystem, ⚠️ un-pushed changes wil be lost ⚠️
 - `INSTALL` - runs `npm i` or `pnpm i` or `yarn install`
-- `START_SERVICE` - runs `npm run ${npmRunLifecycle}`, see service configuration
+- `START_SERVICE` - runs `npm run ${npmRunLifecycle}` for regular services, or `npx nest start` when `isServer: true`
+- `START_SERVICE_WATCH` - (server only) runs `npx nest start --watch`
+- `START_SERVICE_DEBUG` - (server only) runs `npx nest start --watch --debug`
 - `STOP_SERVER` - kills process created by `START_SERVICE`
 
 ### Generic Tasks (reusable tasks)
