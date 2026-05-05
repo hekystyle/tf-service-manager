@@ -25,6 +25,7 @@ export interface Service {
   relativePath?: string;
   isMonorepoRoot?: boolean;
   isMonorepoChild?: boolean;
+  isServer?: boolean;
 }
 export interface ServiceStatus {
   name: string;

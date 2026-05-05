@@ -136,8 +136,9 @@
                     />
                     <q-btn
                       v-else-if="
-                        !isMonorepoChild(props.row.name) ||
-                        !restrictedChildTasks.includes(task.name)
+                        (!isMonorepoChild(props.row.name) ||
+                          !restrictedChildTasks.includes(task.name)) &&
+                        (!task.serverOnly || isServerService(props.row.name))
                       "
                       size="sm"
                       :color="task.color"
@@ -219,6 +220,9 @@
                   >
                     <q-td class="text-center" v-if="!isGitTask(task)">
                       <q-btn
+                        v-if="
+                          !task.serverOnly || hasServerInSelectedServices()
+                        "
                         size="sm"
                         :color="task.color"
                         :icon="task.icon"
@@ -290,6 +294,15 @@ const isMonorepoChild = (serviceName: string): boolean => {
   return !!service?.isMonorepoChild;
 };
 
+const isServerService = (serviceName: string): boolean => {
+  const service = servicesStore.getServiceByName(serviceName);
+  return !!service?.isServer;
+};
+
+const hasServerInSelectedServices = (): boolean => {
+  return settingStore.selectedServices.some((name) => isServerService(name));
+};
+
 const orderedServices = computed(() => {
   const services = [...servicesStore.servicesStatus];
   return services.sort((a, b) => {
@@ -359,7 +372,7 @@ const serviceStatusColumns = computed((): QTableProps["columns"] => {
     if (!isGitTask(task)) {
       columns.push({
         name: task.name,
-        label: task.name,
+        label: task.label ?? task.name,
         align: "center",
         field: (row) => row.name,
       });
@@ -367,7 +380,7 @@ const serviceStatusColumns = computed((): QTableProps["columns"] => {
   }
   columns.push({
     name: "custom",
-    label: "CUSTOM TASKS",
+    label: "Custom tasks",
     align: "center",
     field: (row) => row.currentGitBranch,
   });
@@ -406,10 +419,15 @@ const runTask = (task: string, service: string) => {
 const runAllTaskForSelectedServices = (task: string) => {
   const isRestrictedForChild =
     restrictedChildTasks.includes(task) || gitTasks.includes(task);
+  const taskDef = tasksStore.tasks.find((t) => t.name === task);
+  const isServerOnly = !!taskDef?.serverOnly;
 
   for (const service of servicesStore.services) {
     if (settingStore.selectedServices.includes(service.name)) {
       if (isRestrictedForChild && isMonorepoChild(service.name)) {
+        continue;
+      }
+      if (isServerOnly && !isServerService(service.name)) {
         continue;
       }
       tasksStore.runTask(task, service.name);
@@ -484,5 +502,11 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.q-table thead th {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 </style>

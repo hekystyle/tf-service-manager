@@ -10,6 +10,8 @@ export interface Task {
   icon: string;
   runIfNotCloned: boolean;
   runIfRunStatusIs: string[];
+  serverOnly?: boolean;
+  label?: string;
 }
 
 export interface BranchTask {
