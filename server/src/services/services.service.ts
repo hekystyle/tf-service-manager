@@ -60,6 +60,7 @@ export interface Task {
   runIfRunStatusIs?: ServiceRunStatus[];
   serverOnly?: boolean;
   label?: string;
+  dedicatedColumn?: boolean;
 }
 
 export interface BaseServiceConfig {

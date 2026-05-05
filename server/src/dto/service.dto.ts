@@ -25,6 +25,7 @@ export class TaskDto {
   runIfRunStatusIs: ServiceRunStatus[];
   serverOnly?: boolean;
   label?: string;
+  dedicatedColumn?: boolean;
 }
 
 export class ServicesDto {

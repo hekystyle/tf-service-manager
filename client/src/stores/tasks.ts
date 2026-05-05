@@ -12,6 +12,7 @@ export interface Task {
   runIfRunStatusIs: string[];
   serverOnly?: boolean;
   label?: string;
+  dedicatedColumn?: boolean;
 }
 
 export interface BranchTask {

@@ -151,12 +151,35 @@
                       @click="runTask(task.name, props.row.name)"
                     />
                   </q-td>
+                  <q-td
+                    v-for="task of dedicatedTasks"
+                    :key="task.name"
+                    :props="props"
+                  >
+                    <q-spinner-hourglass
+                      v-if="isTaskRunning(props.row.name, task.name)"
+                      color="white"
+                      size="sm"
+                    />
+                    <q-btn
+                      v-else-if="
+                        serviceHasTask(props.row.name, task.name) &&
+                        (!task.serverOnly || isServerService(props.row.name))
+                      "
+                      size="sm"
+                      :color="task.color"
+                      :icon="task.icon"
+                      :disable="
+                        !tasksStore.runnableStatus[task.name]?.[props.row.name]
+                      "
+                      @click="runTask(task.name, props.row.name)"
+                    />
+                  </q-td>
                   <q-td key="custom" :props="props">
                     <q-spinner-hourglass
                       v-if="
-                        servicesStore
-                          .getServiceByName(props.row.name)
-                          ?.tasks!.map((task) => task.name)
+                        nonDedicatedServiceTasks(props.row.name)
+                          .map((task) => task.name)
                           .includes(getRunningTask(props.row.name) || '')
                       "
                       color="white"
@@ -168,9 +191,7 @@
                       :disable-task-function="disableTaskBasedOnRunState"
                       :run-task-function="runTask"
                       :service-name="props.row.name"
-                      :tasks="
-                        servicesStore.getServiceByName(props.row.name)?.tasks!
-                      "
+                      :tasks="nonDedicatedServiceTasks(props.row.name)"
                     />
                   </q-td>
                 </q-tr>
@@ -233,6 +254,23 @@
                       />
                     </q-td>
                   </template>
+
+                  <q-td
+                    v-for="task of dedicatedTasks"
+                    :key="task.name"
+                    class="text-center"
+                  >
+                    <q-btn
+                      v-if="
+                        !task.serverOnly || hasServerInSelectedServices()
+                      "
+                      size="sm"
+                      :color="task.color"
+                      :icon="task.icon"
+                      :disable="settingStore.selectedServices.length === 0"
+                      @click="runAllTaskForSelectedServices(task.name)"
+                    />
+                  </q-td>
 
                   <q-td key="custom" class="text-center">
                     <custom-action-button
@@ -305,6 +343,28 @@ const isServerService = (serviceName: string): boolean => {
 
 const hasServerInSelectedServices = (): boolean => {
   return settingStore.selectedServices.some((name) => isServerService(name));
+};
+
+const dedicatedTasks = computed((): Task[] => {
+  const seen = new Map<string, Task>();
+  for (const service of servicesStore.services) {
+    for (const task of service.tasks || []) {
+      if (task.dedicatedColumn && !seen.has(task.name)) {
+        seen.set(task.name, task);
+      }
+    }
+  }
+  return Array.from(seen.values());
+});
+
+const serviceHasTask = (serviceName: string, taskName: string): boolean => {
+  const service = servicesStore.getServiceByName(serviceName);
+  return !!service?.tasks?.some((t) => t.name === taskName);
+};
+
+const nonDedicatedServiceTasks = (serviceName: string): Task[] => {
+  const service = servicesStore.getServiceByName(serviceName);
+  return (service?.tasks || []).filter((t) => !t.dedicatedColumn);
 };
 
 const orderedServices = computed(() => {
@@ -382,6 +442,14 @@ const serviceStatusColumns = computed((): QTableProps["columns"] => {
       });
     }
   }
+  for (const task of dedicatedTasks.value) {
+    columns.push({
+      name: task.name,
+      label: task.label ?? task.name,
+      align: "center",
+      field: (row) => row.name,
+    });
+  }
   columns.push({
     name: "custom",
     label: "Custom tasks",
@@ -423,8 +491,11 @@ const runTask = (task: string, service: string) => {
 const runAllTaskForSelectedServices = (task: string) => {
   const isRestrictedForChild =
     restrictedChildTasks.includes(task) || gitTasks.includes(task);
-  const taskDef = tasksStore.tasks.find((t) => t.name === task);
+  const taskDef =
+    tasksStore.tasks.find((t) => t.name === task) ||
+    dedicatedTasks.value.find((t) => t.name === task);
   const isServerOnly = !!taskDef?.serverOnly;
+  const isDedicated = !!taskDef?.dedicatedColumn;
 
   for (const service of servicesStore.services) {
     if (settingStore.selectedServices.includes(service.name)) {
@@ -432,6 +503,9 @@ const runAllTaskForSelectedServices = (task: string) => {
         continue;
       }
       if (isServerOnly && !isServerService(service.name)) {
+        continue;
+      }
+      if (isDedicated && !serviceHasTask(service.name, task)) {
         continue;
       }
       tasksStore.runTask(task, service.name);
@@ -445,13 +519,14 @@ const updateCustomTasksForSelected = (enabled_services: string[]): void => {
   var started: boolean = false;
   for (const service of servicesStore.services) {
     if (enabled_services.includes(service.name)) {
+      const tasks = (service.tasks || []).filter((t) => !t.dedicatedColumn);
       if (!started) {
         // set initial value for task intersection
-        taskIntersection = service.tasks;
+        taskIntersection = tasks;
         started = true;
       } else {
         taskIntersection = taskIntersection.filter((intersectTask) =>
-          service.tasks.some((task) => task.name == intersectTask.name),
+          tasks.some((task) => task.name == intersectTask.name),
         );
       }
     }
