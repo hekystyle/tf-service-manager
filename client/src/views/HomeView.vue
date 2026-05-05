@@ -1,8 +1,10 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="row q-col-gutter-md">
+  <q-page class="q-pa-md page-stack">
+    <div class="row q-col-gutter-md" v-if="settingStore.showMonitorCharts">
       <div class="col-6"><cpu-usage-chart /></div>
       <div class="col-6"><memory-usage-chart /></div>
+    </div>
+    <div class="row q-col-gutter-md">
       <div class="col-12">
         <q-card flat>
           <q-card-section>
@@ -247,6 +249,8 @@
           </q-card-section>
         </q-card>
       </div>
+    </div>
+    <div class="row q-col-gutter-md">
       <div class="col-6">
         <pipeline-status :services="servicesStore.services" />
       </div>
@@ -508,5 +512,11 @@ defineExpose({
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 </style>

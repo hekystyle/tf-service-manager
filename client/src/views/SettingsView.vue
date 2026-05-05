@@ -46,6 +46,16 @@
           <span>Open</span>
         </div>
       </q-card-section>
+
+      <q-separator />
+
+      <q-card-section>
+        <div class="text-h6 q-mb-sm">Monitor charts</div>
+        <q-checkbox
+          v-model="settingsStore.showMonitorCharts"
+          label="Show CPU and Memory usage charts"
+        />
+      </q-card-section>
     </q-card>
   </q-page>
 </template>

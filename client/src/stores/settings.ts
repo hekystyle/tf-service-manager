@@ -5,6 +5,7 @@ interface SettingState {
   selectedServices: string[];
   ideCommand: string;
   leftDrawerDefaultOpen: boolean;
+  showMonitorCharts: boolean;
 }
 
 export const useSettingsStore = defineStore("tf-sm-settings", {
@@ -15,6 +16,7 @@ export const useSettingsStore = defineStore("tf-sm-settings", {
       selectedServices: [],
       ideCommand: "code",
       leftDrawerDefaultOpen: true,
+      showMonitorCharts: true,
     }) as SettingState,
 
   getters: {},
