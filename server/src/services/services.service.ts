@@ -48,6 +48,7 @@ export interface BaseService {
   relativePath?: string;
   isMonorepoRoot?: boolean;
   isMonorepoChild?: boolean;
+  isServer?: boolean;
 }
 
 export interface Task {
@@ -57,6 +58,8 @@ export interface Task {
   color?: string;
   runIfNotCloned: boolean;
   runIfRunStatusIs?: ServiceRunStatus[];
+  serverOnly?: boolean;
+  label?: string;
 }
 
 export interface BaseServiceConfig {
@@ -73,6 +76,7 @@ export interface BaseServiceConfig {
   relativePath?: string;
   isMonorepoRoot?: boolean;
   isMonorepoChild?: boolean;
+  isServer?: boolean;
 }
 
 const ensureTaskHasRequiredFields = (task: Task): void => {
@@ -179,6 +183,7 @@ export class ServicesService {
         relativePath: service.relativePath,
         isMonorepoRoot: service.isMonorepoRoot,
         isMonorepoChild: service.isMonorepoChild,
+        isServer: service.isServer,
       });
     }
 

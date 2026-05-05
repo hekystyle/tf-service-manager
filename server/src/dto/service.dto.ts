@@ -14,6 +14,7 @@ export class ServiceDto {
   relativePath?: string;
   isMonorepoRoot?: boolean;
   isMonorepoChild?: boolean;
+  isServer?: boolean;
 }
 
 export class TaskDto {
@@ -22,6 +23,8 @@ export class TaskDto {
   icon: string;
   runIfNotCloned: boolean;
   runIfRunStatusIs: ServiceRunStatus[];
+  serverOnly?: boolean;
+  label?: string;
 }
 
 export class ServicesDto {

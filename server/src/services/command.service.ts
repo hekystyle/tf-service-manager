@@ -26,6 +26,8 @@ export enum DefaultTask {
   REMOVE_SERVICE = 'REMOVE_SERVICE',
   INSTALL = 'INSTALL',
   START_SERVICE = 'START_SERVICE',
+  START_SERVICE_WATCH = 'START_SERVICE_WATCH',
+  START_SERVICE_DEBUG = 'START_SERVICE_DEBUG',
   STOP_SERVICE = 'STOP_SERVICE',
 }
 
@@ -87,6 +89,7 @@ export const baseTasks: Task[] = [
     runIfRunStatusIs: [ServiceRunStatus.STOPPED],
     color: 'grey-8',
     icon: 'info',
+    label: 'Install',
   },
   {
     name: DefaultTask.GIT_CLONE,
@@ -95,14 +98,7 @@ export const baseTasks: Task[] = [
     runIfRunStatusIs: [],
     color: 'grey-8',
     icon: 'download_for_offline',
-  },
-  {
-    name: DefaultTask.REMOVE_SERVICE,
-    command: '',
-    runIfNotCloned: false,
-    runIfRunStatusIs: [ServiceRunStatus.STOPPED],
-    color: 'negative',
-    icon: 'delete_forever',
+    label: 'Git clone',
   },
   {
     name: DefaultTask.START_SERVICE,
@@ -111,6 +107,27 @@ export const baseTasks: Task[] = [
     runIfRunStatusIs: [ServiceRunStatus.STOPPED],
     color: 'positive',
     icon: 'play_circle_outline',
+    label: 'Start',
+  },
+  {
+    name: DefaultTask.START_SERVICE_WATCH,
+    command: '',
+    runIfNotCloned: false,
+    runIfRunStatusIs: [ServiceRunStatus.STOPPED],
+    color: 'positive',
+    icon: 'visibility',
+    serverOnly: true,
+    label: 'Watch',
+  },
+  {
+    name: DefaultTask.START_SERVICE_DEBUG,
+    command: '',
+    runIfNotCloned: false,
+    runIfRunStatusIs: [ServiceRunStatus.STOPPED],
+    color: 'positive',
+    icon: 'bug_report',
+    serverOnly: true,
+    label: 'Debug',
   },
   {
     name: DefaultTask.STOP_SERVICE,
@@ -119,6 +136,16 @@ export const baseTasks: Task[] = [
     runIfRunStatusIs: [ServiceRunStatus.RUNNING, ServiceRunStatus.PENDING],
     color: 'orange-14',
     icon: 'pause_circle_outline',
+    label: 'Stop',
+  },
+  {
+    name: DefaultTask.REMOVE_SERVICE,
+    command: '',
+    runIfNotCloned: false,
+    runIfRunStatusIs: [ServiceRunStatus.STOPPED],
+    color: 'negative',
+    icon: 'delete_forever',
+    label: 'Remove',
   },
 ];
 
@@ -139,6 +166,7 @@ export class CommandService {
   private readonly npmCommand: string;
   private readonly pnpmCommand: string;
   private readonly yarnCommand: string;
+  private readonly npxCommand: string;
   private readonly rmCommand: string;
   private readonly servicesDirectory: string;
   constructor(
@@ -150,6 +178,7 @@ export class CommandService {
     this.npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
     this.pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
     this.yarnCommand = process.platform === 'win32' ? 'yarn.cmd' : 'yarn';
+    this.npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
     this.rmCommand =
       process.platform === 'win32'
         ? `Remove-Item -Recurse -Force -Path`
@@ -289,23 +318,50 @@ export class CommandService {
         });
         break;
       /**
-       * START_SERVICE
+       * START_SERVICE / START_SERVICE_WATCH / START_SERVICE_DEBUG
        *******************************************************/
       case DefaultTask.START_SERVICE:
-        if (!serviceObject.npmRunLifecycle) {
+      case DefaultTask.START_SERVICE_WATCH:
+      case DefaultTask.START_SERVICE_DEBUG: {
+        const isServerStart =
+          task === DefaultTask.START_SERVICE_WATCH ||
+          task === DefaultTask.START_SERVICE_DEBUG;
+        if (isServerStart && !serviceObject.isServer) {
           this.servicesService.setServiceRunningTask(serviceName, '');
+          this.servicesService.removeRunningTask(serviceName, task);
           this.eventsGateway.sendStatusUpdateToClient();
           this.eventsGateway.sendLogsToClient(
-            `Service ${serviceName} has no npmRunLifecycle script configured.`,
+            `Task ${task} is only available for server services.`,
             serviceName,
             true,
           );
           break;
         }
+        if (serviceObject.isServer) {
+          const flags =
+            task === DefaultTask.START_SERVICE_DEBUG
+              ? ' --watch --debug'
+              : task === DefaultTask.START_SERVICE_WATCH
+                ? ' --watch'
+                : '';
+          command = `${this.npxCommand} nest start${flags}`;
+        } else {
+          if (!serviceObject.npmRunLifecycle) {
+            this.servicesService.setServiceRunningTask(serviceName, '');
+            this.servicesService.removeRunningTask(serviceName, task);
+            this.eventsGateway.sendStatusUpdateToClient();
+            this.eventsGateway.sendLogsToClient(
+              `Service ${serviceName} has no npmRunLifecycle script configured.`,
+              serviceName,
+              true,
+            );
+            break;
+          }
+          const startPackageManagerCommand =
+            this.getPackageManagerCommand(serviceName);
+          command = `${startPackageManagerCommand} run ${serviceObject.npmRunLifecycle}`;
+        }
         this.servicesService.setServiceRunningTask(serviceName, task);
-        const startPackageManagerCommand =
-          this.getPackageManagerCommand(serviceName);
-        command = `${startPackageManagerCommand} run ${serviceObject.npmRunLifecycle}`;
         this.servicesService.setServiceRunStatus(
           serviceName,
           ServiceRunStatus.PENDING,
@@ -317,6 +373,7 @@ export class CommandService {
           this.eventsGateway.sendStatusUpdateToClient();
         });
         break;
+      }
       /**
        * STOP_SERVICE
        *******************************************************/
