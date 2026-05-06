@@ -72,7 +72,7 @@ export class MonitorService {
           }
         } catch (error) {
           if (this.servicesService.serviceHasBranch(service)) {
-            console.error(error);
+            console.error(`[${service.name}]`, error);
           }
         }
       }

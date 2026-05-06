@@ -338,13 +338,17 @@ export class CommandService {
           break;
         }
         if (serviceObject.isServer) {
-          const flags =
-            task === DefaultTask.START_SERVICE_DEBUG
-              ? ' --watch --debug'
-              : task === DefaultTask.START_SERVICE_WATCH
-                ? ' --watch'
-                : '';
-          command = `${this.npxCommand} nest start${flags}`;
+          // Mirror the in-repo "dev" scripts which give every server its own
+          // inspector address so multiple debug sessions don't collide on the
+          // default 9229. Convention is API port + 200, overridable per service.
+          const debugPort = serviceObject.debugPort ?? serviceObject.port + 200;
+          let flags = '';
+          if (task === DefaultTask.START_SERVICE_DEBUG) {
+            flags = ` --watch --debug 0.0.0.0:${debugPort}`;
+          } else if (task === DefaultTask.START_SERVICE_WATCH) {
+            flags = ' --watch';
+          }
+          command = `${this.npxCommand} cross-env NODE_OPTIONS=--max-http-header-size=1280000 nest start${flags}`;
         } else {
           if (!serviceObject.npmRunLifecycle) {
             this.servicesService.setServiceRunningTask(serviceName, '');
@@ -603,7 +607,7 @@ export class CommandService {
     return new Promise((resolve) => {
       let resultData = '';
       const chunks = command.split(' ');
-      console.log(`${prefix} Running: ${command}`);
+      console.log(`[${service}]${prefix} Running: ${command}`);
       const process = spawn(chunks[0], chunks.slice(1), {
         cwd,
         shell,
@@ -689,7 +693,7 @@ export class CommandService {
       }
     } catch (error) {
       if (this.servicesService.serviceHasBranch(service)) {
-        console.error(error);
+        console.error(`[${service.name}]`, error);
       }
     }
 

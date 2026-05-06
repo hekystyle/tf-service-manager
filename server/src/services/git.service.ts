@@ -183,7 +183,7 @@ export class GitService {
     if (branch === undefined) {
       if (!service.defaultGitBranch) {
         console.log(
-          'GIT_CHECKOUT: no branch provided and no defaultBranch configured, not running',
+          `[${serviceName}] GIT_CHECKOUT: no branch provided and no defaultBranch configured, not running`,
         );
         this.servicesService.removeRunningTask(
           serviceName,
@@ -292,7 +292,7 @@ export class GitService {
   }
 
   private logError(serviceName: string, error) {
-    console.error(error);
+    console.error(`[${serviceName}]`, error);
     const data =
       typeof error?.toString === 'function' ? error.toString() : undefined;
     if (data) {

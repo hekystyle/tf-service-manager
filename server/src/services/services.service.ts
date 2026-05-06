@@ -50,6 +50,7 @@ export interface BaseService {
   isMonorepoRoot?: boolean;
   isMonorepoChild?: boolean;
   isServer?: boolean;
+  debugPort?: number;
 }
 
 export interface Task {
@@ -79,6 +80,7 @@ export interface BaseServiceConfig {
   isMonorepoRoot?: boolean;
   isMonorepoChild?: boolean;
   isServer?: boolean;
+  debugPort?: number;
 }
 
 const ensureTaskHasRequiredFields = (task: Task): void => {
@@ -105,9 +107,7 @@ const detectPackageManager = (
   } else if (fs.existsSync(path.resolve(`${servicePath}/package-lock.json`))) {
     return PackageManager.NPM;
   } else {
-    console.log(
-      `No lock file found for service ${serviceName}, defaulting to npm`,
-    );
+    console.log(`[${serviceName}] No lock file found, defaulting to npm`);
     return PackageManager.NPM;
   }
 };
@@ -265,7 +265,7 @@ export class ServicesService {
         this.setServiceRunStatus(serviceName, ServiceRunStatus.RUNNING);
       })
       .catch((err) => {
-        console.log(err);
+        console.log(`[${serviceName}]`, err);
         this.setServiceRunStatus(serviceName, ServiceRunStatus.STOPPED);
       });
   }
